@@ -22,6 +22,9 @@
   <meta property="twitter:description" content="Create, share, and explore 5x5 pixel art. Paint your own or upload images to generate patterns.">
   <meta property="twitter:image" content="/assets/littlepix-logo.png">
 
+  <!-- Cropper.js CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+
   <style>
     :root {
       --bg-color: #f8f9fa;
@@ -412,6 +415,20 @@
     
     #modal-success { text-align: center; }
     
+    /* Crop Modal specific */
+    .crop-container {
+      width: 100%;
+      max-height: 60vh;
+      overflow: hidden;
+      background-color: #f1f2f6;
+      border-radius: 4px;
+    }
+    
+    #cropImage {
+      display: block;
+      max-width: 100%;
+    }
+
     @media (max-width: 600px) {
       .gallery-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -528,12 +545,28 @@
       </div>
     </div>
   </div>
+
+  <div class="modal-overlay" id="cropModalOverlay">
+    <div class="modal" style="max-width: 500px;">
+      <h2>Crop Image</h2>
+      <p style="margin-bottom: 1rem; font-size: 0.8rem;">Adjust the 1:1 square to capture the area you want to convert to pixels.</p>
+      <div class="crop-container">
+        <img id="cropImage" src="">
+      </div>
+      <div class="modal-actions">
+        <button onclick="closeCropModal()">Cancel</button>
+        <button class="primary" onclick="processCrop()">Apply Crop</button>
+      </div>
+    </div>
+  </div>
   
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
   <script>
     let gridSize = 5;
     let selectedColor = "#000000";
     let customColor = "#000000";
     let nextCursor = null;
+    let cropper = null;
     
     function setGridSize(size) {
       if (gridSize === size) return;
@@ -734,45 +767,68 @@
 
       const reader = new FileReader();
       reader.onload = function (e) {
-        const img = new Image();
-        img.onload = function () {
-          const canvas = document.getElementById("parse-canvas");
-          const ctx = canvas.getContext("2d");
-          
-          canvas.width = gridSize;
-          canvas.height = gridSize;
-
-          // Draw image scaled to gridSize x gridSize
-          ctx.clearRect(0, 0, gridSize, gridSize);
-          ctx.drawImage(img, 0, 0, gridSize, gridSize);
-
-          const imageData = ctx.getImageData(0, 0, gridSize, gridSize).data;
-          const mapping = {};
-
-          for (let i = 0; i < gridSize * gridSize; i++) {
-            const index = i * 4;
-            const r = imageData[index];
-            const g = imageData[index + 1];
-            const b = imageData[index + 2];
-            const a = imageData[index + 3];
-
-            // Only map if not fully transparent
-            if (a > 0) {
-              const hex = "#" + 
-                r.toString(16).padStart(2, "0") + 
-                g.toString(16).padStart(2, "0") + 
-                b.toString(16).padStart(2, "0");
-              mapping[i] = hex;
-            }
-          }
-
-          loadArtIntoEditor(mapping, gridSize);
-          // Reset file input for same-file re-uploads
-          event.target.value = '';
-        };
+        const img = document.getElementById('cropImage');
         img.src = e.target.result;
+        
+        document.getElementById('cropModalOverlay').style.display = 'flex';
+        
+        if (cropper) {
+          cropper.destroy();
+        }
+        
+        cropper = new Cropper(img, {
+          aspectRatio: 1,
+          viewMode: 1,
+          responsive: true,
+          guides: true,
+          autoCropArea: 0.8,
+        });
+        
+        // Reset file input for same-file re-uploads
+        event.target.value = '';
       };
       reader.readAsDataURL(file);
+    }
+
+    function closeCropModal() {
+      document.getElementById('cropModalOverlay').style.display = 'none';
+      if (cropper) {
+        cropper.destroy();
+        cropper = null;
+      }
+    }
+
+    function processCrop() {
+      if (!cropper) return;
+      
+      const canvas = cropper.getCroppedCanvas({
+        width: gridSize,
+        height: gridSize,
+      });
+
+      const ctx = canvas.getContext("2d");
+      const imageData = ctx.getImageData(0, 0, gridSize, gridSize).data;
+      const mapping = {};
+
+      for (let i = 0; i < gridSize * gridSize; i++) {
+        const index = i * 4;
+        const r = imageData[index];
+        const g = imageData[index + 1];
+        const b = imageData[index + 2];
+        const a = imageData[index + 3];
+
+        // Only map if not fully transparent
+        if (a > 0) {
+          const hex = "#" + 
+            r.toString(16).padStart(2, "0") + 
+            g.toString(16).padStart(2, "0") + 
+            b.toString(16).padStart(2, "0");
+          mapping[i] = hex;
+        }
+      }
+
+      loadArtIntoEditor(mapping, gridSize);
+      closeCropModal();
     }
 
     // Close dropdown when clicking outside
@@ -882,7 +938,7 @@
             </div>
             <div class="art-info">
               <h3>${escapeHtml(art.name)}</h3>
-              <p>by ${escapeHtml(art.author)} (${artSize}x${artSize})</p>
+              <p>by ${escapeHtml(art.author)}</p>
             </div>
           `;
           

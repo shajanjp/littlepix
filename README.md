@@ -1,0 +1,2 @@
+# LittlePix
+Embrace the 5x5 Pixel Art is a minimalist project that celebrates creativity within constraints. Using a 5×5 grid of pixels, it transforms simple color mappings into expressive micro-art. The project explores how powerful ideas can emerge from just 25 pixels, blending code, hardware, and imagination into a tiny digital canvas.

@@ -15,13 +15,62 @@ const auth = basicAuth({
 // Serve static assets
 app.use("/assets/*", serveStatic({ root: "./" }));
 
-// Protection for dashboard and delete API
+// Protection for dashboard and delete/patch API
 app.use("/dashboard", auth);
 app.use("/api/art/:id", (c, next) => {
-  if (c.req.method === "DELETE") {
+  if (c.req.method === "DELETE" || c.req.method === "PATCH") {
     return auth(c, next);
   }
   return next();
+});
+
+// PATCH to update art
+app.patch("/api/art/:id", async (c) => {
+  const id = c.req.param("id");
+  try {
+    const body = await c.req.json();
+    const { name, author, mapping, size } = body;
+
+    // Find existing art to know its size for the key
+    let oldArt = null;
+    let oldKey = null;
+
+    // Check both common sizes
+    for (const s of [5, 8]) {
+      const entry = await kv.get(["art", s, id]);
+      if (entry.value) {
+        oldArt = entry.value;
+        oldKey = ["art", s, id];
+        break;
+      }
+    }
+
+    if (!oldArt) {
+      return c.json({ message: "Art not found" }, 404);
+    }
+
+    const updatedArt = {
+      ...oldArt,
+      name: name || oldArt.name,
+      author: author || oldArt.author,
+      mapping: mapping || oldArt.mapping,
+      size: size || oldArt.size,
+      updatedAt: Date.now()
+    };
+
+    const newKey = ["art", updatedArt.size, id];
+
+    if (oldKey.join(",") !== newKey.join(",")) {
+      await kv.delete(oldKey);
+    }
+    
+    await kv.set(newKey, updatedArt);
+
+    return c.json({ message: "Art updated successfully", data: updatedArt }, 200);
+  } catch (error) {
+    console.error("Failed to update art:", error);
+    return c.json({ message: "Internal Server Error", error: error.message }, 500);
+  }
 });
 
 // API to submit art

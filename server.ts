@@ -1,13 +1,28 @@
 import { Hono } from "https://deno.land/x/hono@v4.0.0/mod.ts";
-import { logger, serveStatic } from "https://deno.land/x/hono@v4.0.0/middleware.ts";
+import { logger, serveStatic, basicAuth } from "https://deno.land/x/hono@v4.0.0/middleware.ts";
 
 const app = new Hono();
 const kv = await Deno.openKv();
 
 app.use("*", logger());
 
+// Basic Auth Middleware for protected routes
+const auth = basicAuth({
+  username: Deno.env.get("ADMIN_USERNAME") || "admin",
+  password: Deno.env.get("ADMIN_PASSWORD") || "password",
+});
+
 // Serve static assets
 app.use("/assets/*", serveStatic({ root: "./" }));
+
+// Protection for dashboard and delete API
+app.use("/dashboard", auth);
+app.use("/api/art/:id", (c, next) => {
+  if (c.req.method === "DELETE") {
+    return auth(c, next);
+  }
+  return next();
+});
 
 // API to submit art
 app.post("/api/art", async (c) => {
@@ -107,6 +122,16 @@ app.get("/parse", async (c) => {
     return c.html(html);
   } catch (e) {
     return c.text("parse.html not found", 404);
+  }
+});
+
+// Serve dashboard.html
+app.get("/dashboard", async (c) => {
+  try {
+    const html = await Deno.readTextFile("./dashboard.html");
+    return c.html(html);
+  } catch (e) {
+    return c.text("dashboard.html not found", 404);
   }
 });
 

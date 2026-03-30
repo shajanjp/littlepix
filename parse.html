@@ -20,6 +20,9 @@
   <meta property="twitter:description" content="Generate 5x5 pixel JSON from images for LittlePix.">
   <meta property="twitter:image" content="/assets/littlepix-logo.png">
 
+  <!-- Cropper.js CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -35,6 +38,46 @@
       height: 200px;
       margin-top: 15px;
       font-family: monospace;
+    }
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.8);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal {
+      background: white;
+      padding: 20px;
+      max-width: 500px;
+      width: 90%;
+      border-radius: 8px;
+    }
+    .crop-container {
+      width: 100%;
+      max-height: 60vh;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    #cropImage {
+      display: block;
+      max-width: 100%;
+    }
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    button {
+      padding: 8px 16px;
+      cursor: pointer;
+    }
+    .primary {
+      background: #000;
+      color: #fff;
+      border: none;
     }
   </style>
 </head>
@@ -54,12 +97,27 @@
   <h3>Generated JSON:</h3>
   <textarea id="output"></textarea>
 
+  <div class="modal-overlay" id="cropModalOverlay">
+    <div class="modal">
+      <h3>Crop Image (1:1)</h3>
+      <div class="crop-container">
+        <img id="cropImage" src="">
+      </div>
+      <div class="actions">
+        <button onclick="closeCropModal()">Cancel</button>
+        <button class="primary" onclick="processCrop()">Apply Crop</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
   <script>
     let currentSize = 5;
     const upload = document.getElementById("upload");
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     const output = document.getElementById("output");
+    let cropper = null;
 
     function changeSize(size) {
       currentSize = size;
@@ -108,15 +166,48 @@
 
       const reader = new FileReader();
       reader.onload = function (event) {
-        const img = new Image();
-        img.onload = function () {
-          lastImg = img;
-          processImage();
-        };
+        const img = document.getElementById('cropImage');
         img.src = event.target.result;
+        
+        document.getElementById('cropModalOverlay').style.display = 'flex';
+        
+        if (cropper) {
+          cropper.destroy();
+        }
+        
+        cropper = new Cropper(img, {
+          aspectRatio: 1,
+          viewMode: 1,
+          responsive: true,
+          autoCropArea: 0.8,
+        });
+
+        // Reset file input
+        e.target.value = '';
       };
       reader.readAsDataURL(file);
     });
+
+    function closeCropModal() {
+      document.getElementById('cropModalOverlay').style.display = 'none';
+      if (cropper) {
+        cropper.destroy();
+        cropper = null;
+      }
+    }
+
+    function processCrop() {
+      if (!cropper) return;
+      
+      const croppedCanvas = cropper.getCroppedCanvas();
+      const img = new Image();
+      img.onload = function() {
+        lastImg = img;
+        processImage();
+        closeCropModal();
+      };
+      img.src = croppedCanvas.toDataURL();
+    }
   </script>
 
 </body>

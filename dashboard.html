@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - LittlePix</title>
+  <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+  <style>
+    :root {
+      --bg-color: #f8f9fa;
+      --card-bg: #ffffff;
+      --text-primary: #2d3436;
+      --text-secondary: #636e72;
+      --accent-color: #0984e3;
+      --danger-color: #e74c3c;
+      --border-radius: 12px;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --transition: all 0.2s ease;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-primary);
+      margin: 0;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    
+    .container {
+      width: 100%;
+      max-width: 1000px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .back-link {
+      text-decoration: none;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: var(--transition);
+    }
+
+    .back-link:hover {
+      color: var(--text-primary);
+    }
+
+    .table-container {
+      background: var(--card-bg);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th {
+      background: #f1f2f6;
+      padding: 1rem;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    td {
+      padding: 1rem;
+      border-bottom: 1px solid #f1f2f6;
+      font-size: 0.9rem;
+      vertical-align: middle;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .art-preview {
+      width: 40px;
+      height: 40px;
+      border-radius: 4px;
+      border: 1px solid #eee;
+    }
+
+    .btn-delete {
+      background: none;
+      border: 1px solid #dfe6e9;
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      color: var(--danger-color);
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 500;
+      transition: var(--transition);
+    }
+
+    .btn-delete:hover {
+      background: var(--danger-color);
+      color: white;
+      border-color: var(--danger-color);
+    }
+
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .btn-page {
+      background: var(--card-bg);
+      border: 1px solid #dfe6e9;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      transition: var(--transition);
+    }
+
+    .btn-page:hover:not(:disabled) {
+      background: #f1f2f6;
+      color: var(--text-primary);
+    }
+
+    .btn-page:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .empty-state {
+      padding: 3rem;
+      text-align: center;
+      color: var(--text-secondary);
+    }
+
+    .loading-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255,255,255,0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .spinner {
+      width: 30px;
+      height: 30px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid var(--accent-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .filters {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 1rem;
+    }
+
+    .size-toggle {
+      display: flex;
+      gap: 0.5rem;
+      background: #eee;
+      padding: 4px;
+      border-radius: 8px;
+    }
+    
+    .size-toggle button {
+      padding: 0.4rem 1rem;
+      font-size: 0.8rem;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: var(--transition);
+      color: var(--text-secondary);
+    }
+    
+    .size-toggle button.active {
+      background-color: white;
+      color: var(--text-primary);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="loading-overlay" id="loading">
+    <div class="spinner"></div>
+  </div>
+
+  <div class="container">
+    <header>
+      <h1>Dashboard</h1>
+      <a href="/" class="back-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        Back to App
+      </a>
+    </header>
+
+    <div class="filters">
+      <div class="size-toggle">
+        <button id="size-all" class="active" onclick="setGridSize(null)">All</button>
+        <button id="size-5" onclick="setGridSize(5)">5x5</button>
+        <button id="size-8" onclick="setGridSize(8)">8x8</button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table id="art-table">
+        <thead>
+          <tr>
+            <th>Art</th>
+            <th>Name</th>
+            <th>Author</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="art-body">
+          <!-- Rows will be added here -->
+        </tbody>
+      </table>
+      <div id="empty-state" class="empty-state" style="display: none;">
+        No arts found.
+      </div>
+    </div>
+
+    <div class="pagination">
+      <button id="prev-btn" class="btn-page" disabled>Previous</button>
+      <button id="next-btn" class="btn-page" disabled>Next</button>
+    </div>
+  </div>
+
+  <script>
+    let currentGridSize = null;
+    let pageCursors = [null]; 
+    let currentPageIdx = 0;
+    const limit = 10;
+
+    function setGridSize(size) {
+      currentGridSize = size;
+      
+      // Update UI
+      document.querySelectorAll('.size-toggle button').forEach(btn => btn.classList.remove('active'));
+      if (size === null) {
+        document.getElementById('size-all').classList.add('active');
+      } else {
+        document.getElementById(`size-${size}`).classList.add('active');
+      }
+      
+      // Reset pagination and fetch
+      pageCursors = [null];
+      currentPageIdx = 0;
+      loadPage(0);
+    }
+
+    async function loadPage(idx) {
+      if (idx < 0) return;
+      
+      showLoading(true);
+      try {
+        const cursor = pageCursors[idx];
+        const url = new URL('/api/art', window.location.origin);
+        url.searchParams.append('limit', limit);
+        if (cursor) url.searchParams.append('cursor', cursor);
+        if (currentGridSize) url.searchParams.append('size', currentGridSize);
+
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        renderTable(result.data);
+        
+        currentPageIdx = idx;
+        
+        // Handle next page cursor
+        if (result.next_cursor) {
+          pageCursors[currentPageIdx + 1] = result.next_cursor;
+          document.getElementById('next-btn').disabled = false;
+        } else {
+          document.getElementById('next-btn').disabled = true;
+        }
+        
+        document.getElementById('prev-btn').disabled = currentPageIdx === 0;
+      } catch (error) {
+        console.error('Error fetching arts:', error);
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function renderTable(arts) {
+      const tbody = document.getElementById('art-body');
+      const emptyState = document.getElementById('empty-state');
+      tbody.innerHTML = '';
+      
+      if (!arts || arts.length === 0) {
+        emptyState.style.display = 'block';
+        return;
+      }
+      
+      emptyState.style.display = 'none';
+      arts.forEach(art => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${renderArtPreview(art.mapping, art.size || 5)}</td>
+          <td>${escapeHtml(art.name)}</td>
+          <td>${escapeHtml(art.author)}</td>
+          <td>
+            <button class="btn-delete" onclick="deleteArt('${art.id}')">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderArtPreview(mapping, size) {
+      const svgNamespace = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(svgNamespace, "svg");
+      svg.setAttribute("viewBox", "0 0 100 100");
+      svg.classList.add('art-preview');
+      
+      const pixelSize = 100 / size;
+      for (let i = 0; i < size * size; i++) {
+        const color = mapping[i] || '#ffffff';
+        const x = (i % size) * pixelSize;
+        const y = Math.floor(i / size) * pixelSize;
+        const rect = document.createElementNS(svgNamespace, "rect");
+        rect.setAttribute("x", x);
+        rect.setAttribute("y", y);
+        rect.setAttribute("width", pixelSize);
+        rect.setAttribute("height", pixelSize);
+        rect.setAttribute("fill", color);
+        svg.appendChild(rect);
+      }
+      
+      return svg.outerHTML;
+    }
+
+    async function deleteArt(id) {
+      if (!confirm('Are you sure you want to delete this art?')) return;
+      
+      showLoading(true);
+      try {
+        const response = await fetch(`/api/art/${id}`, { method: 'DELETE' });
+        if (response.ok) {
+          // Refresh current page
+          loadPage(currentPageIdx);
+        } else {
+          alert('Failed to delete art');
+        }
+      } catch (error) {
+        console.error('Error deleting art:', error);
+        alert('Error deleting art');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function showLoading(show) {
+      document.getElementById('loading').style.display = show ? 'flex' : 'none';
+    }
+
+    function escapeHtml(text) {
+      if (text === undefined || text === null) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    document.getElementById('next-btn').onclick = () => loadPage(currentPageIdx + 1);
+    document.getElementById('prev-btn').onclick = () => loadPage(currentPageIdx - 1);
+
+    // Initial load
+    loadPage(0);
+  </script>
+</body>
+</html>

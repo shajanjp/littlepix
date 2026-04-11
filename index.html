@@ -46,11 +46,54 @@
       align-items: center;
       min-height: 100vh;
       margin: 0;
-      padding: 2rem 1rem;
+      padding-bottom: 3rem;
+    }
+
+    .navbar {
+      width: 100%;
+      background-color: var(--card-bg);
+      border-bottom: 1px solid #dfe6e9;
+      display: flex;
+      justify-content: center;
+      padding: 0.75rem 0;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      margin-bottom: 1rem;
+    }
+
+    .navbar-container {
+      width: 100%;
+      max-width: 900px;
+      padding: 0 1.5rem;
+      display: flex;
+      align-items: center;
+      box-sizing: border-box;
+    }
+
+    .navbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text-primary);
+    }
+
+    .navbar-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+    }
+
+    .navbar-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
     }
     
     .app-container {
-      padding: 2rem;
+      padding: 2rem 1.5rem;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -58,6 +101,7 @@
       max-width: 500px;
       width: 100%;
       margin-bottom: 3rem;
+      box-sizing: border-box;
     }
     
     header {
@@ -282,6 +326,8 @@
     .gallery-container {
       width: 100%;
       max-width: 900px;
+      padding: 0 1.5rem;
+      box-sizing: border-box;
     }
     
     .gallery-header {
@@ -451,10 +497,17 @@
   </style>
 </head>
 <body>
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/" class="navbar-brand">
+        <img src="/assets/littlepix-logo.png" alt="LittlePix Logo" class="navbar-logo">
+        <span class="navbar-title">LittlePix</span>
+      </a>
+    </div>
+  </nav>
   
   <div class="app-container">
     <header>
-      <h1>LittlePix</h1>
       <p>Select a color and paint pixels.</p>
     </header>
     

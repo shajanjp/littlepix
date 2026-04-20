@@ -792,6 +792,18 @@
       });
     }
 
+    function getExportFileName(extension) {
+      const artName = currentArtName || document.getElementById('artName').value.trim() || 'untitled';
+      const authorName = currentArtAuthor || document.getElementById('authorName').value.trim() || localStorage.getItem('littlepix-author') || 'anonymous';
+      
+      const sanitize = (str) => str.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+      
+      const sArt = sanitize(artName) || 'untitled';
+      const sAuthor = sanitize(authorName) || 'anonymous';
+      
+      return `littlepix-art-${gridSize}x${gridSize}-${sArt}-by-${sAuthor}.${extension}`;
+    }
+
     function downloadSVG() {
       const mapping = {};
       for (let i = 0; i < gridSize * gridSize; i++) {
@@ -803,7 +815,7 @@
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `littlepix-art-${gridSize}x${gridSize}.svg`;
+      link.download = getExportFileName('svg');
       link.click();
       URL.revokeObjectURL(url);
       document.getElementById('download-menu').classList.remove('show');
@@ -819,14 +831,20 @@
 
       for (let i = 0; i < gridSize * gridSize; i++) {
         const color = document.getElementById(`cell-${i}`).dataset.color || '#ffffff';
-        const x = (i % gridSize) * cellSize;
-        const y = Math.floor(i / gridSize) * cellSize;
+        const col = i % gridSize;
+        const row = Math.floor(i / gridSize);
+        
+        const x1 = Math.floor(col * cellSize);
+        const y1 = Math.floor(row * cellSize);
+        const x2 = Math.floor((col + 1) * cellSize);
+        const y2 = Math.floor((row + 1) * cellSize);
+
         ctx.fillStyle = color;
-        ctx.fillRect(x, y, cellSize, cellSize);
+        ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
       }
 
       const link = document.createElement('a');
-      link.download = `littlepix-art-${gridSize}x${gridSize}.png`;
+      link.download = getExportFileName('png');
       link.href = canvas.toDataURL('image/png');
       link.click();
       document.getElementById('download-menu').classList.remove('show');
@@ -998,6 +1016,8 @@
         });
 
         if (response.ok) {
+          currentArtName = artName;
+          currentArtAuthor = authorName;
           showModalState('success');
           fetchGallery(); 
         } else {
